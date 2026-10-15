@@ -10,10 +10,10 @@ Team: Silvana Velazquez Vivanco and Samuel Lucena Godoi
 
 ## Compile
 ```
-g++ socialNetwork.cpp -o socialNetwork 
+g++ socialNetwork.cpp main.cpp -o main 
 ```
  
 ## Run
 ```
-./socialNetwork friends.txt
+./main friends.txt
 ```
