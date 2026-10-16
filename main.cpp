@@ -27,8 +27,12 @@ int main(int argc, char* argv[]) {
     cout << "Loaded " << net.getNumUsers() << " users and " 
          << net.getNumFriendships() << " friendships.\n\n";
 
+         net.printPath();
+         cout << endl;
+
     cout << "Commands:\n";
     cout << "  path <user1> <user2>\n";
+    cout << " route <user1> <user1> <stop> <user2>\n";
     cout << "  quit\n\n";
 
     string cmd;
@@ -56,6 +60,23 @@ int main(int argc, char* argv[]) {
                 printPath(path);
             }
         } 
+
+        else if (cmd == "route") {
+            string user1, stop, user2;
+            cin >> user1 >> stop >> user2;
+
+            if (!net.hasUser(user1) || !net.hasUser(stop) || !net.hasUser(user2)) {
+                cout <<"Error: one or both users do not exist.\n";
+                continue;
+            }
+            vector<string> route = net.shortestRoute(user1,stop,user2);
+            if (route.empty()) {
+                cout << "No connection between " << user1 << stop << ", and " << user2 << ".\n";
+            } else {
+                printPath(route);
+            }
+        }
+
         else {
             cout << "Unknown command.\n";
             // Clear the rest of the line to prevent infinite loop on bad input

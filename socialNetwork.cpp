@@ -1,4 +1,5 @@
 #include "socialNetwork.h"
+#include <iostream>
 #include <fstream>
 #include <queue>
 
@@ -128,6 +129,40 @@ vector<string> SocialNetwork::shortestPath(const string& from, const string& to)
     for (int i = path.size() - 1; i >= 0; i--) {
         correctPath.push_back(path[i]);
     }
-    
+
     return correctPath;
+}
+
+// Prints the list of the social network
+void SocialNetwork::printPath() {
+    for (int i=0; i < adjList.size(); i++) {
+        cout << "[" << i << "] " << idToUser[i] << " --> ";
+        for (int j=0; j< adjList[i].size(); j++) {
+            int friendID = adjList[i][j];
+            cout << idToUser[friendID] << " ";
+        }
+            cout << endl;
+    }
+}
+
+// Multi-stop route method
+vector<string> SocialNetwork::shortestRoute(const string& start, const string& stop, const string& end) {
+    vector<string>route;
+
+    vector<string> path1 = shortestPath(start,stop); //Finds the shortest path from the start to the stop
+    vector<string> path2 = shortestPath(stop,end); // Fiinds the shortest path from the stop to the end
+
+    if (path1.empty() || path2.empty()) { // returns an empty vector if any of the paths are empty
+        return route;
+    }
+
+    // adds the first path to the route and then adds the second one starting at 1 to avoid printing stop twice
+    for (int i=0; i<path1.size();i++) {
+        route.push_back(path1[i]);
+    }
+    for (int i=1; i<path2.size();i++) {
+        route.push_back(path2[i]);
+    }
+
+    return route;
 }

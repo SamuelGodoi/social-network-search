@@ -30,6 +30,10 @@ public:
     
     // Finds the shortest path between two users
     vector<string> shortestPath(const string& from, const string& to);
+
+    void printPath();
+
+    vector<string> shortestRoute(const string& start, const string& stop, const string& end); // Creates a route from start -> stop -> end
 };
 
 #endif
