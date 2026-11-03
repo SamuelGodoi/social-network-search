@@ -42,7 +42,7 @@ bool SocialNetwork::loadFromFile(const string& filename) {
                 break;
             }
         }
-
+        
         // Add the friendship 
         if (!alreadyFriends) {
             adjList[id1].push_back(id2);
@@ -166,3 +166,5 @@ vector<string> SocialNetwork::shortestRoute(const string& start, const string& s
 
     return route;
 }
+
+// Visit reachable nodes and return to first node (DFS)

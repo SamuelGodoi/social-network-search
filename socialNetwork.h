@@ -32,8 +32,13 @@ public:
     vector<string> shortestPath(const string& from, const string& to);
 
     void printPath();
-
+    
     vector<string> shortestRoute(const string& start, const string& stop, const string& end); // Creates a route from start -> stop -> end
+
+    vector<string>round_trip(const string& start); // OP 3: Visit all reachable nodes and return to the first one
+
+    string findMeetingPoint(const string& user1, const string& user2, const string& user3); // OP 4: Find best meeting point for three users
+
 };
 
 #endif

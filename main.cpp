@@ -76,6 +76,36 @@ int main(int argc, char* argv[]) {
                 printPath(route);
             }
         }
+        else if (cmd == "roundtrip") {
+            string user;
+            cin >> user;
+
+            if (!net.hasUser(user)) {
+                cout << "Error: user does not exist.\n";
+                continue;
+            }
+            vector<string> roundTrip = net.round_trip(user);
+            if (roundTrip.empty()) {
+                cout << "Error generating roundtrip.\n";
+            } else {
+                printPath(roundTrip);
+            }
+        }
+        else if (cmd == "meet") {
+            string user1, user2, user3;
+            cin >> user1 >> user2 >> user3;
+
+            if (!net.hasUser(user1) || !net.hasUser(user2) || !net.hasUser(user3)) {
+                cout << "Error: Not three users exist.\n";
+                continue;
+            }
+            string meeting_point = net.findMeetingPoint(user1, user2, user3);
+            if (meeting_point.empty()) {
+                cout << "Error: no meeting location found for the three users.\n";
+            } else {
+                cout << "Best meeting location is: " << meeting_point << "\n";
+            }
+        }
 
         else {
             cout << "Unknown command.\n";
