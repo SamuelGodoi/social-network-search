@@ -167,4 +167,97 @@ vector<string> SocialNetwork::shortestRoute(const string& start, const string& s
     return route;
 }
 
-// Visit reachable nodes and return to first node (DFS)
+// Visit reachable nodes and return to first node (DFS) : OP 3
+vector<string> SocialNetwork::round_trip(const string& start) {
+    vector<string>path;
+    // it returns empty if start does not exist 
+    if (!hasUser(start)) {
+        return path;
+    }
+    int startID = userToID[start];
+    vector <bool> visited(adjList.size(), false);
+
+    visited[startID]= true;
+    path.push_back(idToUser[startID]);
+
+    int current = startID;
+    bool keepGoing = true;
+
+    // loop to contunue visiting until it's done
+    while (keepGoing) { 
+        keepGoing = false;
+
+        for (int i=0; i<adjList[current].size(); i++) {
+            int friendID = adjList[current][i];
+            // move to the friend if it's not visited
+            if (visited[friendID] ==false) {
+                visited[friendID]=true;
+                path.push_back(idToUser[friendID]);
+                current = friendID;
+                keepGoing = true;
+                break;
+            }
+        }
+        // if there are not more unvisited friends, return to the start
+        if (!keepGoing && current != startID) {
+            vector<string> returnPath = shortestPath(idToUser[current],start);
+
+            // starts at 1 to avoid duplicating the current node
+            for (int i=1; i<returnPath.size();i++) {
+                path.push_back(returnPath[i]);
+            }
+        }
+    }
+    return path;
+}
+
+// OP 4: Meeting location
+
+// Verifies that the three users exist
+string SocialNetwork::findMeetingPoint(const string& user1, const string& user2, const string& user3) {
+    if (!hasUser(user1) || (!hasUser(user2) || (!hasUser(user3)))) {
+        return "";
+    }
+    // Get IDs for the three users
+    int ID1 = userToID[user1];
+    int ID2 = userToID[user2];
+    int ID3 = userToID[user3];
+
+    // create empty vectors to store distances and paths for each user
+    vector<int>dist1,dist2,dist3;
+    vector<int>p1,p2,p3;
+
+    // To fill the vectors with distances from start node
+    bfs(ID1,dist1,p1);
+    bfs(ID2,dist2,p2);
+    bfs(ID3,dist3,p3);
+
+    // declared variables to track the best meeting point
+    // initialized in -1 because we don't have a valid point yet
+    int best = -1;
+    int minimumDist = 99999999;
+
+    // Started a loop throught every user to see if they are a good meeting point
+    for (int i=0;i<adjList.size(); i++) {
+        // skip the three users 
+        if (i== ID1 || i==ID2 || i==ID3) {
+            continue;
+        }
+        // return -1 if there is no path 
+        if (dist1[i]==-1 || dist2[i]==-1 || dist3[i]==-1) {
+            continue;
+        }
+        // do a sum of the distances of the three users
+        int totalDistance = dist1[i]+dist2[i]+dist3[i];
+
+        if (totalDistance < minimumDist) {
+            minimumDist = totalDistance;
+            best =i; 
+        }
+    }
+    // return the name and not the ID if there is a valid meeting point 
+    if (best!= -1) {
+        return idToUser[best];
+    }
+    return "";
+
