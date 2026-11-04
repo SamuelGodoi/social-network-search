@@ -33,7 +33,9 @@ int main(int argc, char* argv[]) {
     cout << "Commands:\n";
     cout << "  path <user1> <user2>\n";
     cout << " route <user1> <user1> <stop> <user2>\n";
-    cout << "  quit\n\n";
+    cout << " roundtrip <user>\n";
+    cout << " meet <user1> <user2> <user3>\n";
+    cout << "  quit\n";
 
     string cmd;
     while (true) {
@@ -48,7 +50,7 @@ int main(int argc, char* argv[]) {
             cin >> user1 >> user2;
 
             if (!net.hasUser(user1) || !net.hasUser(user2)) {
-                cout << "Error: one or both users do not exist.\n";
+                cout << "Error: One or both users do not exist.\n";
                 continue;
             }
 
@@ -66,7 +68,7 @@ int main(int argc, char* argv[]) {
             cin >> user1 >> stop >> user2;
 
             if (!net.hasUser(user1) || !net.hasUser(stop) || !net.hasUser(user2)) {
-                cout <<"Error: one or both users do not exist.\n";
+                cout <<"Error: One or both users do not exist.\n";
                 continue;
             }
             vector<string> route = net.shortestRoute(user1,stop,user2);
@@ -81,7 +83,7 @@ int main(int argc, char* argv[]) {
             cin >> user;
 
             if (!net.hasUser(user)) {
-                cout << "Error: user does not exist.\n";
+                cout << "Error: User does not exist.\n";
                 continue;
             }
             vector<string> roundTrip = net.round_trip(user);
@@ -96,12 +98,12 @@ int main(int argc, char* argv[]) {
             cin >> user1 >> user2 >> user3;
 
             if (!net.hasUser(user1) || !net.hasUser(user2) || !net.hasUser(user3)) {
-                cout << "Error: Not three users exist.\n";
+                cout << "Error: Not all three users exist.\n";
                 continue;
             }
             string meeting_point = net.findMeetingPoint(user1, user2, user3);
             if (meeting_point.empty()) {
-                cout << "Error: no meeting location found for the three users.\n";
+                cout << "Error: No meeting location found for the three users.\n";
             } else {
                 cout << "Best meeting location is: " << meeting_point << "\n";
             }

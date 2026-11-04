@@ -260,4 +260,4 @@ string SocialNetwork::findMeetingPoint(const string& user1, const string& user2,
         return idToUser[best];
     }
     return "";
-
+}
