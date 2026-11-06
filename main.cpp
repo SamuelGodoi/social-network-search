@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
     cout << "Commands:\n";
     cout << "  path <user1> <user2>\n";
-    cout << " route <user1> <user1> <stop> <user2>\n";
+    cout << " route <user1> <stop> <user2>\n";
     cout << " roundtrip <user>\n";
     cout << " meet <user1> <user2> <user3>\n";
     cout << "  quit\n";
