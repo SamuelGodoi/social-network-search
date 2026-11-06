@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
             }
             vector<string> route = net.shortestRoute(user1,stop,user2);
             if (route.empty()) {
-                cout << "No connection between " << user1 << stop << ", and " << user2 << ".\n";
+                cout << "No connection between " << user1 << ", " << stop << ", and " << user2 << ".\n";
             } else {
                 printPath(route);
             }
