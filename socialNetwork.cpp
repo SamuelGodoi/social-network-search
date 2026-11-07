@@ -1,7 +1,105 @@
 #include "socialNetwork.h"
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <queue>
+#include <sstream>
+
+AdjacencyList::AdjacencyList(): heads(nullptr), vertexCount(0), capacity(0), friendshipCount(0) {}
+
+AdjacencyList::~AdjacencyList() {
+    for (int user = 0; user < vertexCount; ++user) {
+        Node* current = heads[user];
+        while (current != nullptr) {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
+    }
+    delete[] heads;
+}
+
+void AdjacencyList::ensureCapacity(int requiredCapacity) {
+    if (requiredCapacity <= capacity) {
+        return;
+    }
+
+    int newCapacity = capacity == 0 ? 4 : capacity;
+    while (newCapacity < requiredCapacity) {
+        newCapacity *= 2;
+    }
+
+    Node** newHeads = new Node*[newCapacity];
+    for (int i = 0; i < newCapacity; ++i) {
+        newHeads[i] = i < vertexCount ? heads[i] : nullptr;
+    }
+    delete[] heads;
+    heads = newHeads;
+    capacity = newCapacity;
+}
+
+int AdjacencyList::addVertex() {
+    ensureCapacity(vertexCount + 1);
+    heads[vertexCount] = nullptr;
+    return vertexCount++;
+}
+
+bool AdjacencyList::hasEdge(int from, int to) const {
+    if (from < 0 || from >= vertexCount) {
+        return false;
+    }
+
+    for (const Node* current = heads[from]; current != nullptr; current = current->next) {
+        if (current->userID == to) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void AdjacencyList::appendNeighbor(int userID, int neighborID) {
+    Node* newNode = new Node;
+    newNode->userID = neighborID;
+    newNode->next = nullptr;
+
+    if (heads[userID] == nullptr) {
+        heads[userID] = newNode;
+        return;
+    }
+
+    Node* last = heads[userID];
+    while (last->next != nullptr) {
+        last = last->next;
+    }
+    last->next = newNode;
+}
+
+bool AdjacencyList::addUndirectedEdge(int first, int second) {
+    if (first < 0 || first >= vertexCount || second < 0 ||
+        second >= vertexCount || first == second || hasEdge(first, second)) {
+        return false;
+    }
+
+    appendNeighbor(first, second);
+    appendNeighbor(second, first);
+    ++friendshipCount;
+    return true;
+}
+
+int AdjacencyList::size() const {
+    return vertexCount;
+}
+
+int AdjacencyList::edgeCount() const {
+    return friendshipCount;
+}
+
+const AdjacencyList::Node* AdjacencyList::neighbors(int userID) const {
+    if (userID < 0 || userID >= vertexCount) {
+        return nullptr;
+    }
+    return heads[userID];
+}
 
 // Returns the ID for a name. If they don't exist yet, it adds them.
 int SocialNetwork::getUser(const string& name) {
@@ -11,10 +109,9 @@ int SocialNetwork::getUser(const string& name) {
     }
     
     // Otherwise, create a new user
-    int newID = idToUser.size();
+    int newID = adjList.addVertex();
     userToID[name] = newID;
     idToUser.push_back(name);
-    adjList.push_back(vector<int>()); // Add an empty friend list for them
     
     return newID;
 }
@@ -26,28 +123,34 @@ bool SocialNetwork::loadFromFile(const string& filename) {
         return false;
     }
 
-    string user1, user2;
-    // Simple way to read two strings per line
-    while (file >> user1 >> user2) {
-        if (user1 == user2) continue; // Skip if someone is friends with themselves
+    string line;
+    int lineNumber = 0;
+    while (getline(file, line)) {
+        ++lineNumber;
+        istringstream lineStream(line);
+        string user1, user2, extra;
+
+        if (!(lineStream >> user1)) {
+            continue;
+        }
+        if (!(lineStream >> user2) || (lineStream >> extra)) {
+            cerr << "Error: malformed input in '" << filename << "' at line "
+                 << lineNumber << "; expected exactly two usernames.\n";
+            return false;
+        }
+
+        if (user1 == user2) {
+            continue;
+        }
 
         int id1 = getUser(user1);
         int id2 = getUser(user2);
+        adjList.addUndirectedEdge(id1, id2);
+    }
 
-        // Check if they are already friends to avoid duplicates
-        bool alreadyFriends = false;
-        for (int i = 0; i < adjList[id1].size(); i++) {
-            if (adjList[id1][i] == id2) {
-                alreadyFriends = true;
-                break;
-            }
-        }
-        
-        // Add the friendship 
-        if (!alreadyFriends) {
-            adjList[id1].push_back(id2);
-            adjList[id2].push_back(id1);
-        }
+    if (file.bad()) {
+        cerr << "Error: failed while reading '" << filename << "'.\n";
+        return false;
     }
     return true;
 }
@@ -57,15 +160,11 @@ bool SocialNetwork::hasUser(const string& name) {
 }
 
 int SocialNetwork::getNumUsers() {
-    return idToUser.size();
+    return adjList.size();
 }
 
 int SocialNetwork::getNumFriendships() {
-    int totalEdges = 0;
-    for (int i = 0; i < adjList.size(); i++) {
-        totalEdges += adjList[i].size();
-    }
-    return totalEdges / 2; // Divide by 2 because A->B and B->A is one friendship
+    return adjList.edgeCount();
 }
 
 // Breadth-First Search
@@ -83,8 +182,9 @@ void SocialNetwork::bfs(int start, vector<int>& distances, vector<int>& parents)
         q.pop();
         
         // Check all friends of the current user
-        for (int i = 0; i < adjList[current].size(); i++) {
-            int neighbor = adjList[current][i];
+        for (const AdjacencyList::Node* edge = adjList.neighbors(current);
+             edge != nullptr; edge = edge->next) {
+            int neighbor = edge->userID;
             
             // If we haven't visited this neighbor yet
             if (distances[neighbor] == -1) {
@@ -94,6 +194,19 @@ void SocialNetwork::bfs(int start, vector<int>& distances, vector<int>& parents)
             }
         }
     }
+}
+
+vector<string> SocialNetwork::reconstructPath(int target, const vector<int>& parents) {
+    vector<string> reversedPath;
+    for (int current = target; current != -1; current = parents[current]) {
+        reversedPath.push_back(idToUser[current]);
+    }
+
+    vector<string> path;
+    for (vector<string>::size_type i = reversedPath.size(); i > 0; --i) {
+        path.push_back(reversedPath[i - 1]);
+    }
+    return path;
 }
 
 // Uses BFS to find the path, then traces backward using the parent array
@@ -117,20 +230,7 @@ vector<string> SocialNetwork::shortestPath(const string& from, const string& to)
         return path; 
     }
     
-    // Trace back from target to start
-    int current = targetID;
-    while (current != -1) {
-        path.push_back(idToUser[current]);
-        current = parents[current];
-    }
-    
-    // The path is currently backwards (target -> start), so flip it
-    vector<string> correctPath;
-    for (int i = path.size() - 1; i >= 0; i--) {
-        correctPath.push_back(path[i]);
-    }
-
-    return correctPath;
+    return reconstructPath(targetID, parents);
 }
 
 vector<string> SocialNetwork::shortestPathUnderLimit(
@@ -150,88 +250,100 @@ vector<string> SocialNetwork::shortestPathUnderLimit(
 
 // Prints the list of the social network
 void SocialNetwork::printPath() {
-    for (int i=0; i < adjList.size(); i++) {
+    for (int i = 0; i < adjList.size(); i++) {
         cout << "[" << i << "] " << idToUser[i] << " --> ";
-        for (int j=0; j< adjList[i].size(); j++) {
-            int friendID = adjList[i][j];
-            cout << idToUser[friendID] << " ";
+        for (const AdjacencyList::Node* edge = adjList.neighbors(i);
+             edge != nullptr; edge = edge->next) {
+            cout << idToUser[edge->userID] << " ";
         }
-            cout << endl;
+        cout << endl;
     }
 }
 
-// Multi-stop route method
-vector<string> SocialNetwork::shortestRoute(const string& start, const string& stop, const string& end) {
-    vector<string>route;
+// Finds the shortest route through both required users in either order.
+vector<string> SocialNetwork::shortestRoute(const string& start,
+                                           const string& required1,
+                                           const string& required2,
+                                           const string& end) {
+    auto buildRoute = [this, &start, &end](
+                          const string& firstRequired,
+                          const string& secondRequired) {
+        vector<vector<string>> segments;
+        segments.push_back(shortestPath(start, firstRequired));
+        segments.push_back(shortestPath(firstRequired, secondRequired));
+        segments.push_back(shortestPath(secondRequired, end));
 
-    vector<string> path1 = shortestPath(start,stop); //Finds the shortest path from the start to the stop
-    vector<string> path2 = shortestPath(stop,end); // Fiinds the shortest path from the stop to the end
-
-    if (path1.empty() || path2.empty()) { // returns an empty vector if any of the paths are empty
-        return route;
-    }
-
-    // adds the first path to the route and then adds the second one starting at 1 to avoid printing stop twice
-    for (int i=0; i<path1.size();i++) {
-        route.push_back(path1[i]);
-    }
-    for (int i=1; i<path2.size();i++) {
-        route.push_back(path2[i]);
-    }
-
-    return route;
-}
-
-// Visit reachable nodes and return to first node (DFS) : OP 3
-vector<string> SocialNetwork::round_trip(const string& start) {
-    vector<string>path;
-    // it returns empty if start does not exist 
-    if (!hasUser(start)) {
-        return path;
-    }
-    int startID = userToID[start];
-    vector <bool> visited(adjList.size(), false);
-
-    visited[startID]= true;
-    path.push_back(idToUser[startID]);
-
-    int current = startID;
-    bool keepGoing = true;
-
-    // loop to contunue visiting until it's done
-    while (keepGoing) { 
-        keepGoing = false;
-
-        for (int i=0; i<adjList[current].size(); i++) {
-            int friendID = adjList[current][i];
-            // move to the friend if it's not visited
-            if (visited[friendID] ==false) {
-                visited[friendID]=true;
-                path.push_back(idToUser[friendID]);
-                current = friendID;
-                keepGoing = true;
-                break;
+        vector<string> route;
+        for (vector<vector<string>>::size_type i = 0; i < segments.size(); ++i) {
+            if (segments[i].empty()) {
+                return vector<string>();
             }
-        }
-        // if there are not more unvisited friends, return to the start
-        if (!keepGoing && current != startID) {
-            vector<string> returnPath = shortestPath(idToUser[current],start);
 
-            // starts at 1 to avoid duplicating the current node
-            for (int i=1; i<returnPath.size();i++) {
-                path.push_back(returnPath[i]);
+            vector<string>::size_type firstUser = route.empty() ? 0 : 1;
+            route.insert(route.end(), segments[i].begin() + firstUser,
+                         segments[i].end());
+        }
+        return route;
+    };
+
+    vector<string> route1 = buildRoute(required1, required2);
+    vector<string> route2 = buildRoute(required2, required1);
+
+    if (route1.empty()) {
+        return route2;
+    }
+    if (route2.empty()) {
+        return route1;
+    }
+
+    // Both routes have the same endpoints, so fewer users means fewer edges.
+    // On a tie, keep the order in which the required users were provided.
+    return route1.size() <= route2.size() ? route1 : route2;
+}
+
+// Walk the BFS spanning tree out and back, visiting every reachable user.
+vector<string> SocialNetwork::round_trip(const string& start) {
+    if (!hasUser(start)) {
+        return vector<string>();
+    }
+
+    int startID = userToID[start];
+    vector<int> distances;
+    vector<int> parents;
+    bfs(startID, distances, parents);
+
+    vector<string> path(1, start);
+    vector<int> stack(1, startID);
+    vector<const AdjacencyList::Node*> nextNeighbor(1, adjList.neighbors(startID));
+
+    while (!stack.empty()) {
+        const AdjacencyList::Node* edge = nextNeighbor.back();
+        while (edge != nullptr && parents[edge->userID] != stack.back()) {
+            edge = edge->next;
+        }
+
+        if (edge != nullptr) {
+            nextNeighbor.back() = edge->next;
+            int child = edge->userID;
+            path.push_back(idToUser[child]);
+            stack.push_back(child);
+            nextNeighbor.push_back(adjList.neighbors(child));
+        } else {
+            stack.pop_back();
+            nextNeighbor.pop_back();
+            if (!stack.empty()) {
+                path.push_back(idToUser[stack.back()]);
             }
         }
     }
     return path;
 }
 
-// OP 4: Meeting location
-
-// Verifies that the three users exist
-string SocialNetwork::findMeetingPoint(const string& user1, const string& user2, const string& user3) {
+MeetingResult SocialNetwork::findMeetingPoint(
+    const string& user1, const string& user2, const string& user3) {
+    MeetingResult result;
     if (!hasUser(user1) || (!hasUser(user2) || (!hasUser(user3)))) {
-        return "";
+        return result;
     }
     // Get IDs for the three users
     int ID1 = userToID[user1];
@@ -250,12 +362,12 @@ string SocialNetwork::findMeetingPoint(const string& user1, const string& user2,
     // declared variables to track the best meeting point
     // initialized in -1 because we don't have a valid point yet
     int best = -1;
-    int minimumDist = 99999999;
+    int minimumDist = numeric_limits<int>::max();
 
     // Started a loop throught every user to see if they are a good meeting point
-    for (int i=0;i<adjList.size(); i++) {
+    for (int i = 0; i < adjList.size(); ++i) {
         // skip the three users 
-        if (i== ID1 || i==ID2 || i==ID3) {
+        if (i == ID1 || i == ID2 || i == ID3) {
             continue;
         }
         // return -1 if there is no path 
@@ -267,12 +379,14 @@ string SocialNetwork::findMeetingPoint(const string& user1, const string& user2,
 
         if (totalDistance < minimumDist) {
             minimumDist = totalDistance;
-            best =i; 
+            best = i;
         }
     }
-    // return the name and not the ID if there is a valid meeting point 
-    if (best!= -1) {
-        return idToUser[best];
+    if (best != -1) {
+        result.meetingPoint = idToUser[best];
+        result.pathFromUser1 = reconstructPath(best, p1);
+        result.pathFromUser2 = reconstructPath(best, p2);
+        result.pathFromUser3 = reconstructPath(best, p3);
     }
-    return "";
+    return result;
 }

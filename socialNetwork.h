@@ -11,15 +11,54 @@
 
 using namespace std;
 
+struct MeetingResult {
+    string meetingPoint;
+    vector<string> pathFromUser1;
+    vector<string> pathFromUser2;
+    vector<string> pathFromUser3;
+};
+
+class AdjacencyList {
+public:
+    struct Node {
+        int userID;
+        Node* next;
+    };
+
+private:
+    Node** heads;
+    int vertexCount;
+    int capacity;
+    int friendshipCount;
+
+    void ensureCapacity(int requiredCapacity);
+    bool hasEdge(int from, int to) const;
+    void appendNeighbor(int userID, int neighborID);
+
+public:
+    AdjacencyList();
+    ~AdjacencyList();
+
+    AdjacencyList(const AdjacencyList&) = delete;
+    AdjacencyList& operator=(const AdjacencyList&) = delete;
+
+    int addVertex();
+    bool addUndirectedEdge(int first, int second);
+    int size() const;
+    int edgeCount() const;
+    const Node* neighbors(int userID) const;
+};
+
 class SocialNetwork {
 private:
     unordered_map<string, int> userToID;  // Maps username to an integer ID
     vector<string> idToUser;              // Maps ID back to username
-    vector<vector<int>> adjList;          // Adjacency list for friendships
+    AdjacencyList adjList;                // Hand-built linked-list adjacency storage
 
     // Helper functions
     int getUser(const string& name);
     void bfs(int start, vector<int>& distances, vector<int>& parents);
+    vector<string> reconstructPath(int target, const vector<int>& parents);
 
 public:
     // Core functionalities
@@ -36,11 +75,13 @@ public:
 
     void printPath();
     
-    vector<string> shortestRoute(const string& start, const string& stop, const string& end); // Creates a route from start -> stop -> end
+    vector<string> shortestRoute(const string& start, const string& required1,
+                                 const string& required2, const string& end);
 
     vector<string>round_trip(const string& start); // OP 3: Visit all reachable nodes and return to the first one
 
-    string findMeetingPoint(const string& user1, const string& user2, const string& user3); // OP 4: Find best meeting point for three users
+    MeetingResult findMeetingPoint(const string& user1, const string& user2,
+                                   const string& user3);
 
 };
 
