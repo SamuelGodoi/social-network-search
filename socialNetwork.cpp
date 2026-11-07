@@ -133,6 +133,21 @@ vector<string> SocialNetwork::shortestPath(const string& from, const string& to)
     return correctPath;
 }
 
+vector<string> SocialNetwork::shortestPathUnderLimit(
+    const string& from, const string& to, int connectionLimitExclusive) {
+    if (connectionLimitExclusive <= 0) {
+        return vector<string>();
+    }
+
+    vector<string> path = shortestPath(from, to);
+    if (path.empty() ||
+        path.size() - 1 >= static_cast<vector<string>::size_type>(connectionLimitExclusive)) {
+        return vector<string>();
+    }
+
+    return path;
+}
+
 // Prints the list of the social network
 void SocialNetwork::printPath() {
     for (int i=0; i < adjList.size(); i++) {

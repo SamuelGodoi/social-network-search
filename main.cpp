@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
 
     cout << "Commands:\n";
     cout << "  path <user1> <user2>\n";
+    cout << "  within <user1> <user2> <max_connections_exclusive>\n";
     cout << " route <user1> <stop> <user2>\n";
     cout << " roundtrip <user>\n";
     cout << " meet <user1> <user2> <user3>\n";
@@ -62,6 +63,33 @@ int main(int argc, char* argv[]) {
                 printPath(path);
             }
         } 
+
+        else if (cmd == "within") {
+            string user1, user2;
+            int connectionLimitExclusive;
+            cin >> user1 >> user2;
+            if (!(cin >> connectionLimitExclusive)) {
+                cout << "Error: Connection limit must be an integer.\n";
+                cin.clear();
+                string junk;
+                getline(cin, junk);
+                continue;
+            }
+
+            if (!net.hasUser(user1) || !net.hasUser(user2)) {
+                cout << "Error: One or both users do not exist.\n";
+                continue;
+            }
+
+            vector<string> path = net.shortestPathUnderLimit(
+                user1, user2, connectionLimitExclusive);
+            if (path.empty()) {
+                cout << "No path with fewer than " << connectionLimitExclusive
+                     << " connections between " << user1 << " and " << user2 << ".\n";
+            } else {
+                printPath(path);
+            }
+        }
 
         else if (cmd == "route") {
             string user1, stop, user2;

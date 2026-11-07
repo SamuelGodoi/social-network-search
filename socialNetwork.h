@@ -31,6 +31,9 @@ public:
     // Finds the shortest path between two users
     vector<string> shortestPath(const string& from, const string& to);
 
+    // Finds the shortest path only when its edge count is below the exclusive limit
+    vector<string> shortestPathUnderLimit(const string& from, const string& to, int connectionLimitExclusive);
+
     void printPath();
     
     vector<string> shortestRoute(const string& start, const string& stop, const string& end); // Creates a route from start -> stop -> end
